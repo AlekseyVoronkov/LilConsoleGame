@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Practice_i_guess;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Practice_i_guess
 {
-    internal class BufferConsole
+    class BufferConsole
     {
         private static char[,] buffer;
         private static ConsoleColor[,] colorBuffer; // Новый буфер для цветов
@@ -62,3 +63,26 @@ namespace Practice_i_guess
 
     }
 }
+
+static class BufferExtensions
+{
+    public static void DrawText(this BufferConsole buffer, int x, int y, string text)
+    {
+        for (int i = 0; i < text.Length; i++)
+        {
+            buffer.DrawToBuffer(x + i, y, text[i]);
+        }
+    }
+
+    public static void ClearArea(this BufferConsole buffer, int x, int y, int width, int height)
+    {
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                buffer.DrawToBuffer(x + i, y + j, ' ');
+            }
+        }
+    }
+}
+

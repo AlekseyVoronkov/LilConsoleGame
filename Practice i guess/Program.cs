@@ -1,4 +1,6 @@
 ﻿using Practice_i_guess;
+using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 
 class TestGame
@@ -6,8 +8,19 @@ class TestGame
     public static Random random = new();
     public static int score = 0;
     private const int MapWidth = 24;
-    private const int MapHeight = 15;
+    private const int MapHeight = 17;
     private const char wallChar = '|';
+    private const char NoKeyMarker = '}';
+    private static readonly char[] NoKeys = [NoKeyMarker, NoKeyMarker, NoKeyMarker, NoKeyMarker];
+    private static readonly Dictionary<char[], (int deltaX, int deltaY)> controls = new()
+    {
+        [['a', 'A', 'ф', 'Ф']] = (-1, 0),
+        [['d', 'D', 'в', 'В']] = (1, 0),
+        [['w', 'W', 'ц', 'Ц']] = (0, -1),
+        [['s', 'S', 'ы', 'Ы']] = (0, 1),
+        [['r', 'R', 'к', 'К']] = (0, 0),
+        [['p', 'P', 'з', 'З']] = (0, 0)
+    };
 
     struct Portal
     {
@@ -96,22 +109,24 @@ class TestGame
         }
     }
 
-    static void TryToMoveRock(ref MainCharacter mainCharacter, ref Rock rock, ref Portal portal)
+    static void HandleControll(ref MainCharacter mainCharacter, ref Rock rock, ref Portal portal)
     {
         if (Console.KeyAvailable)
         {
             var ch = Console.ReadKey(true).KeyChar;
-            MoveCharacter(ch, ref mainCharacter, ref rock);
+            var keysPressed = GetPressedKeys(ch).Item1;
+            var movement = GetPressedKeys(ch).Item2;
+            MoveCharacter(movement.deltaX, movement.deltaY, ref mainCharacter, ref rock);
 
-            if (ch == 'p')
-            {
-                HandlePortal('p', ref mainCharacter, ref portal);
-            }
-
-            if (ch == 'r')
+            if (keysPressed.Contains('r')) 
             {
                 score -= 1;
                 rock = new Rock();
+            }
+
+            if (keysPressed.Contains('p'))
+            {
+                HandlePortal('p', ref mainCharacter, ref portal);
             }
         }
         if(portal.isExitSpawned == true)
@@ -121,29 +136,16 @@ class TestGame
 
         ValidateRockPosition(ref rock);
     }
-
-    private static void MoveCharacter(char ch, ref MainCharacter mainCharacter, ref Rock rock)
+    
+    private static (char[], (int deltaX, int deltaY)) GetPressedKeys(char input)
     {
-        int deltaX = 0, deltaY = 0;
-
-        switch (ch)
-        {
-            case 'w':
-                deltaY = -1;
-                break;
-
-            case 'a':
-                deltaX = -1;
-                break;
-
-            case 's':
-                deltaY = 1;
-                break;
-
-            case 'd':
-                deltaX = 1;
-                break;
-        }
+        char[] keys = controls.FirstOrDefault(kvp => kvp.Key.Contains(input)).Key ?? NoKeys;
+        (int, int) values = controls.FirstOrDefault(kvp => kvp.Key.Contains(input)).Value;
+        
+        return (keys, values);
+    }
+    private static void MoveCharacter(int deltaX, int deltaY, ref MainCharacter mainCharacter, ref Rock rock)
+    {
 
         if(IsCollision(mainCharacter, rock, deltaX, deltaY))
         {
@@ -185,10 +187,7 @@ class TestGame
 
     private static void HandlePortal(char ch, ref MainCharacter mainCharacter, ref Portal portal)
     {
-        if (ch == 'p')
-        {
-            portal.SpawnPortal(ref mainCharacter);
-        }
+        portal.SpawnPortal(ref mainCharacter);
     }
 
     private static void ValidateRockPosition(ref Rock rock)
@@ -213,36 +212,12 @@ class TestGame
         }
     }
 
-
-    protected static int origRow;
-    protected static int origCol;
-
-    //protected static void WriteAt(string s, int x, int y)
-    //{
-    //    if (x >= 0 && x < Console.WindowWidth && y >= 0 && y < Console.WindowHeight)
-    //    {
-    //        Console.SetCursorPosition(origCol + x, origRow + y);
-    //        Console.Write(s);
-    //    }
-    //}
-
-    //public static void ClearConsole()
-    //{
-    //    Console.SetCursorPosition(0, 0);
-    //    Console.CursorVisible = false;
-    //    for (int y = 0; y < Console.WindowHeight; ++y)
-    //        Console.Write(new String(' ', Console.WindowWidth));
-    //    Console.SetCursorPosition(0, 0);
-    //}
-
     public static void Main()
     {
         MainCharacter mainCharacter = new();
         Rock rock1 = new();
         PlaceForRock placeForRock = new();
         Portal portal = new();
-        Portal enterPortal = new();
-        Portal exitPortal = new();
 
         BufferConsole buffer = new();
         buffer.InitBuffer(MapWidth, MapHeight);
@@ -261,10 +236,9 @@ class TestGame
             buffer.DrawToBuffer(rock1.positionX, rock1.positionY, 'O', ConsoleColor.DarkGray);
             buffer.DrawToBuffer(mainCharacter.positionX, mainCharacter.positionY, 'A');
 
-            // Вывод UI (счёт)
-            string scoreText = $"Score: {score}";
-            for (int i = 0; i < scoreText.Length; i++)
-                buffer.DrawToBuffer(8 + i, 1, scoreText[i]);
+            // Вывод UI 
+            GameUI.DrawUI(buffer, score);
+
 
             // Рендер буфера на экран
             buffer.RenderBuffer();
@@ -277,7 +251,7 @@ class TestGame
                 buffer.ClearBuffer();
             }
 
-            TryToMoveRock(ref mainCharacter, ref rock1, ref portal);
+            HandleControll(ref mainCharacter, ref rock1, ref portal);
             GetMeOutOfThisRockPls(ref rock1, ref mainCharacter);
 
             Thread.Sleep(5);
