@@ -1,7 +1,4 @@
 ﻿using Practice_i_guess;
-using System.Reflection;
-using System.Reflection.Metadata;
-using System.Runtime.InteropServices;
 
 class TestGame
 {
@@ -10,16 +7,19 @@ class TestGame
     private const int MapWidth = 24;
     private const int MapHeight = 17;
     private const char wallChar = '|';
+
+    // default value for keys (in case user pressed unmentioned in controls dictionary key) 
     private const char NoKeyMarker = '}';
     private static readonly char[] NoKeys = [NoKeyMarker, NoKeyMarker, NoKeyMarker, NoKeyMarker];
+
     private static readonly Dictionary<char[], (int deltaX, int deltaY)> controls = new()
     {
         [['a', 'A', 'ф', 'Ф']] = (-1, 0),
-        [['d', 'D', 'в', 'В']] = (1, 0),
+        [['d', 'D', 'в', 'В']] = (1, 0), // wasd handling
         [['w', 'W', 'ц', 'Ц']] = (0, -1),
         [['s', 'S', 'ы', 'Ы']] = (0, 1),
-        [['r', 'R', 'к', 'К']] = (0, 0),
-        [['p', 'P', 'з', 'З']] = (0, 0)
+        [['r', 'R', 'к', 'К']] = (0, 0), // respawn rock
+        [['p', 'P', 'з', 'З']] = (0, 0) // poral handling
     };
 
     struct Portal
@@ -72,6 +72,7 @@ class TestGame
             }
         }
     }
+
     struct PlaceForRock
     {
         public int positionX;
@@ -83,6 +84,7 @@ class TestGame
             positionY = random.Next(3, 12);
         }
     }
+
     struct Rock
     {
         public int positionX;
@@ -99,6 +101,7 @@ class TestGame
             positionY += deltaY;
         }
     }
+
     struct MainCharacter
     {
         public int positionX = 1;
@@ -113,9 +116,12 @@ class TestGame
     {
         if (Console.KeyAvailable)
         {
+            // getting pressed key and getting corresponding keys and values in controls dictionary 
             var ch = Console.ReadKey(true).KeyChar;
             var keysPressed = GetPressedKeys(ch).Item1;
             var movement = GetPressedKeys(ch).Item2;
+            
+            // handling controlls
             MoveCharacter(movement.deltaX, movement.deltaY, ref mainCharacter, ref rock);
 
             if (keysPressed.Contains('r')) 
@@ -129,6 +135,7 @@ class TestGame
                 HandlePortal('p', ref mainCharacter, ref portal);
             }
         }
+
         if(portal.isExitSpawned == true)
         {
             portal.TeleportObject(ref mainCharacter, ref rock);
@@ -144,6 +151,7 @@ class TestGame
         
         return (keys, values);
     }
+
     private static void MoveCharacter(int deltaX, int deltaY, ref MainCharacter mainCharacter, ref Rock rock)
     {
 
@@ -158,6 +166,7 @@ class TestGame
 
     static void GetMeOutOfThisRockPls(ref Rock rock, ref MainCharacter mainCharacter)
     {
+        // pushing mc out of rock depending on rock position
         if (rock.positionY == mainCharacter.positionY && rock.positionX == mainCharacter.positionX)
         {
             if (rock.positionX == 1)
@@ -187,6 +196,7 @@ class TestGame
 
     private static void HandlePortal(char ch, ref MainCharacter mainCharacter, ref Portal portal)
     {
+        // maybe i will extend portal functionality later? sound? mana? idk
         portal.SpawnPortal(ref mainCharacter);
     }
 

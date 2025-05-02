@@ -1,16 +1,11 @@
 ﻿using Practice_i_guess;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Practice_i_guess
 {
     class BufferConsole
     {
         private static char[,] buffer;
-        private static ConsoleColor[,] colorBuffer; // Новый буфер для цветов
+        private static ConsoleColor[,] colorBuffer; 
         private static int width, height;
 
         public BufferConsole()
@@ -21,6 +16,7 @@ namespace Practice_i_guess
 
         public void InitBuffer(int w, int h)
         {
+            //setting buffers width and height 
             width = w;
             height = h;
             buffer = new char[width, height];
@@ -30,6 +26,7 @@ namespace Practice_i_guess
 
         public void ClearBuffer()
         {
+            // filling buffer with space char
             for (int y = 0; y < height; y++)
                 for (int x = 0; x < width; x++)
                     buffer[x, y] = ' ';
@@ -40,7 +37,7 @@ namespace Practice_i_guess
             if (x >= 0 && x < width && y >= 0 && y < height)
             {
                 buffer[x, y] = c;
-                colorBuffer[x, y] = color; // Сохраняем цвет
+                colorBuffer[x, y] = color; // saving colour of char at the same coords
             }
         }
 
@@ -52,12 +49,12 @@ namespace Practice_i_guess
             {
                 for (int x = 0; x < width; x++)
                 {
-                    Console.ForegroundColor = colorBuffer[x, y]; // Устанавливаем цвет
+                    Console.ForegroundColor = colorBuffer[x, y];
                     Console.Write(buffer[x, y]);
                 }
                 Console.WriteLine();
             }
-            Console.ResetColor(); // Сбрасываем цвет после отрисовки
+            Console.ResetColor();
         }
 
 

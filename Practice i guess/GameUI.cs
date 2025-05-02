@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Practice_i_guess
+﻿namespace Practice_i_guess
 {
     static class GameUI
     {
         private static readonly Dictionary<string, (int x, int y)> uiElements = new()
         {
+            // text cords
             ["score"] = (8, 1),
             ["help1"] = (0, 15),
             ["help2"] = (0, 16)
@@ -17,13 +12,11 @@ namespace Practice_i_guess
 
         public static void DrawUI(BufferConsole buffer, int score)
         {
-            // Очистка предыдущих элементов
+            // Clear previous elements
             ClearUI(buffer);
 
-            // Отрисовка счёта
+            // draw score and controll hints
             buffer.DrawText(uiElements["score"].x, uiElements["score"].y, $"Score: {score}");
-
-            // Отрисовка подсказок
             buffer.DrawText(uiElements["help1"].x, uiElements["help1"].y, "Respawn rock: [R]");
             buffer.DrawText(uiElements["help2"].x, uiElements["help2"].y, "Portals: [P]");
         }
@@ -32,7 +25,7 @@ namespace Practice_i_guess
         {
             foreach (var element in uiElements.Values)
             {
-                buffer.ClearArea(element.x, element.y, 30, 1); // Очищаем область под элемент
+                buffer.ClearArea(element.x, element.y, 30, 1); // clearing specified area
             }
         }
     }
