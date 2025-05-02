@@ -1,0 +1,12 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+bin/
+obj/
+Debug/
+Release/
+
+# Other
+*.log
+*.cache
