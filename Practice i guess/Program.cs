@@ -1,4 +1,5 @@
 ﻿using Practice_i_guess;
+using System.Runtime.InteropServices;
 
 class TestGame
 {
@@ -6,11 +7,15 @@ class TestGame
     public static int score = 0;
     private const int MapWidth = 24;
     private const int MapHeight = 15;
+    private const char wallChar = '|';
 
     struct Portal
     {
-        public int positionX;
-        public int positionY;
+        public int enterPositionX;
+        public int enterPositionY;
+
+        public int exitPositionX;
+        public int exitPositionY;
 
         public bool isEnterSpawned = false;
         public bool isExitSpawned = false;
@@ -18,40 +23,39 @@ class TestGame
         {
         }
 
-        public void SpawnPortal(ref MainCharacter mainCharacter, ref Portal enterPortal, ref Portal exitPortal)
+        public void SpawnPortal(ref MainCharacter mainCharacter)
         {
             if(isEnterSpawned == false)
             {
-                enterPortal.positionX = mainCharacter.positionX;
-                enterPortal.positionY = mainCharacter.positionY;
+                enterPositionX = mainCharacter.positionX;
+                enterPositionY = mainCharacter.positionY;
                 isEnterSpawned = true;
             }
-            else if(isEnterSpawned == true)
+            else if(isExitSpawned == false)
             {
-                exitPortal.positionX = mainCharacter.positionX;
-                exitPortal.positionY = mainCharacter.positionY;
+                exitPositionX = mainCharacter.positionX;
+                exitPositionY = mainCharacter.positionY;
                 isExitSpawned = true;
             }
-            else if(isEnterSpawned && isExitSpawned)
+            else
             {
                 isEnterSpawned = false;
                 isExitSpawned = false;
             }
-
         }
 
-        public void TeleportObject(ref MainCharacter mainCharater, ref Rock rock, Portal exitPortal)
+        public void TeleportObject(ref MainCharacter mainCharater, ref Rock rock)
         {
-            if (mainCharater.positionX == this.positionX && mainCharater.positionY == this.positionY)
+            if (mainCharater.positionX == enterPositionX && mainCharater.positionY == enterPositionY)
             {
-                mainCharater.positionX = exitPortal.positionX;
-                mainCharater.positionY = exitPortal.positionY;
+                mainCharater.positionX = exitPositionX;
+                mainCharater.positionY = exitPositionY;
             }
 
-            if (rock.positionX == this.positionX && rock.positionY == this.positionY)
+            if (rock.positionX == enterPositionX && rock.positionY == enterPositionY)
             {
-                rock.positionX = exitPortal.positionX;
-                rock.positionY = exitPortal.positionY;
+                rock.positionX = exitPositionX;
+                rock.positionY = exitPositionY;
             }
         }
     }
@@ -92,7 +96,7 @@ class TestGame
         }
     }
 
-    static void TryToMoveRock(ref MainCharacter mainCharacter, ref Rock rock, ref Portal enterPortal, ref Portal exitPortal)
+    static void TryToMoveRock(ref MainCharacter mainCharacter, ref Rock rock, ref Portal portal)
     {
         if (Console.KeyAvailable)
         {
@@ -101,7 +105,7 @@ class TestGame
 
             if (ch == 'p')
             {
-                HandlePortal('p', ref mainCharacter, ref enterPortal, ref exitPortal);
+                HandlePortal('p', ref mainCharacter, ref portal);
             }
 
             if (ch == 'r')
@@ -110,8 +114,11 @@ class TestGame
                 rock = new Rock();
             }
         }
+        if(portal.isExitSpawned == true)
+        {
+            portal.TeleportObject(ref mainCharacter, ref rock);
+        }
 
-        enterPortal.TeleportObject(ref mainCharacter, ref rock, exitPortal);
         ValidateRockPosition(ref rock);
     }
 
@@ -176,11 +183,11 @@ class TestGame
         return mainCharacter.positionX == rock.positionX + deltaX * -1 && mainCharacter.positionY == rock.positionY + deltaY * -1;
     }
 
-    private static void HandlePortal(char ch, ref MainCharacter mainCharacter, ref Portal enterPortal, ref Portal exitPortal)
+    private static void HandlePortal(char ch, ref MainCharacter mainCharacter, ref Portal portal)
     {
         if (ch == 'p')
         {
-            enterPortal.SpawnPortal(ref mainCharacter, ref enterPortal, ref exitPortal);
+            portal.SpawnPortal(ref mainCharacter);
         }
     }
 
@@ -195,13 +202,13 @@ class TestGame
         for (int i = 0; i < MapWidth; ++i)
         {
             // horizontal walls
-            buffer.DrawToBuffer(i, 2, '|', ConsoleColor.DarkYellow);
-            buffer.DrawToBuffer(i, 14, '|', ConsoleColor.DarkYellow);
+            buffer.DrawToBuffer(i, 2, wallChar, ConsoleColor.DarkYellow);
+            buffer.DrawToBuffer(i, 14, wallChar, ConsoleColor.DarkYellow);
             if(i < 14 && i > 2)
             {
                 // vertical walls
-                buffer.DrawToBuffer(0, i, '|', ConsoleColor.DarkYellow);
-                buffer.DrawToBuffer(23, i, '|', ConsoleColor.DarkYellow);
+                buffer.DrawToBuffer(0, i, wallChar, ConsoleColor.DarkYellow);
+                buffer.DrawToBuffer(23, i, wallChar, ConsoleColor.DarkYellow);
             }
         }
     }
@@ -246,13 +253,13 @@ class TestGame
         {
             buffer.ClearBuffer();
             DrawWalls(buffer);
-            buffer.DrawToBuffer(mainCharacter.positionX, mainCharacter.positionY, 'A');
-            buffer.DrawToBuffer(rock1.positionX, rock1.positionY, 'O', ConsoleColor.DarkGray);
             buffer.DrawToBuffer(placeForRock.positionX, placeForRock.positionY, 'X', ConsoleColor.Red);
-            if (enterPortal.isEnterSpawned)
-                buffer.DrawToBuffer(portal.positionX, portal.positionY, 'P', ConsoleColor.Blue);
-            if (exitPortal.isExitSpawned)
-                buffer.DrawToBuffer(portal.positionX, portal.positionY, 'P', ConsoleColor.Magenta);
+            if (portal.isEnterSpawned)
+                buffer.DrawToBuffer(portal.enterPositionX, portal.enterPositionY, 'P', ConsoleColor.Blue);
+            if (portal.isExitSpawned)
+                buffer.DrawToBuffer(portal.exitPositionX, portal.exitPositionY, 'P', ConsoleColor.Magenta);
+            buffer.DrawToBuffer(rock1.positionX, rock1.positionY, 'O', ConsoleColor.DarkGray);
+            buffer.DrawToBuffer(mainCharacter.positionX, mainCharacter.positionY, 'A');
 
             // Вывод UI (счёт)
             string scoreText = $"Score: {score}";
@@ -270,7 +277,7 @@ class TestGame
                 buffer.ClearBuffer();
             }
 
-            TryToMoveRock(ref mainCharacter, ref rock1, ref enterPortal, ref exitPortal);
+            TryToMoveRock(ref mainCharacter, ref rock1, ref portal);
             GetMeOutOfThisRockPls(ref rock1, ref mainCharacter);
 
             Thread.Sleep(5);
