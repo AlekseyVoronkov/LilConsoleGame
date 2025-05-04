@@ -3,7 +3,10 @@
 class TestGame
 {
     public static Random random = new();
+    public enum Ability { None, Portal, DoubleJump }
     public static int score = 0;
+    public static bool inShop = false;
+    public static bool inMainArea = true;
     private const int MapWidth = 24;
     private const int MapHeight = 17;
     private const char wallChar = '|';
@@ -19,7 +22,8 @@ class TestGame
         [['w', 'W', 'ц', 'Ц']] = (0, -1),
         [['s', 'S', 'ы', 'Ы']] = (0, 1),
         [['r', 'R', 'к', 'К']] = (0, 0), // respawn rock
-        [['p', 'P', 'з', 'З']] = (0, 0) // poral handling
+        [['p', 'P', 'з', 'З']] = (0, 0), // poral handling
+        [['e', 'E', 'у', 'У']] = (0, 0) // poral handling
     };
 
     struct Portal
@@ -106,13 +110,17 @@ class TestGame
     {
         public int positionX = 1;
         public int positionY = 3;
+        public List<Ability> Abilities { get; } = new();
 
         public MainCharacter()
         {
         }
+
+        public bool HasAbility(Ability ability) => Abilities.Contains(ability);
+
     }
 
-    static void HandleControll(ref MainCharacter mainCharacter, ref Rock rock, ref Portal portal)
+    static void HandleControll(ref MainCharacter mainCharacter, ref Rock rock, ref Portal portal, ref GameUI gameUI, bool inShop)
     {
         if (Console.KeyAvailable)
         {
@@ -133,6 +141,20 @@ class TestGame
             if (keysPressed.Contains('p'))
             {
                 HandlePortal('p', ref mainCharacter, ref portal);
+            }
+            
+            if (keysPressed.Contains('e') && inShop)
+            {
+                if(score >= GameEconomy.PortalCost)
+                {
+                    score -= GameEconomy.PortalCost;
+                    mainCharacter.Abilities.Add(Ability.Portal);
+                    gameUI.ShowTempMessage("You bought a portal yupieee");
+                }
+                else
+                {
+                    gameUI.ShowTempMessage("poor bastard");
+                }
             }
         }
 
@@ -160,10 +182,33 @@ class TestGame
             rock.Move(deltaX, deltaY);
         }
 
+        HandleMovementBetweenAreas(deltaX, deltaY, ref mainCharacter, ref rock);
+
         mainCharacter.positionX = Math.Clamp(mainCharacter.positionX + deltaX, 1, 22);
         mainCharacter.positionY = Math.Clamp(mainCharacter.positionY + deltaY, 3, 13);
     }
 
+    private static void HandleMovementBetweenAreas(int deltaX, int deltaY, ref MainCharacter mainCharacter, ref Rock rock)
+    {
+        if(inMainArea)
+        {
+            if (mainCharacter.positionX == 22 && (mainCharacter.positionY == 6 || mainCharacter.positionY == 7) && deltaX == 1)
+            {
+                inShop = true;
+                inMainArea = false;
+                mainCharacter.positionX = 0;
+            }
+        }
+        else
+        {
+            if (mainCharacter.positionX == 1 && (mainCharacter.positionY == 6 || mainCharacter.positionY == 7) && deltaX == -1)
+            {
+                inShop = false;
+                inMainArea = true;
+                mainCharacter.positionX = 23;
+            }
+        }
+    }
     static void GetMeOutOfThisRockPls(ref Rock rock, ref MainCharacter mainCharacter)
     {
         // pushing mc out of rock depending on rock position
@@ -196,8 +241,10 @@ class TestGame
 
     private static void HandlePortal(char ch, ref MainCharacter mainCharacter, ref Portal portal)
     {
-        // maybe i will extend portal functionality later? sound? mana? idk
-        portal.SpawnPortal(ref mainCharacter);
+        if(mainCharacter.HasAbility(Ability.Portal) == true)
+        {
+            portal.SpawnPortal(ref mainCharacter);
+        }
     }
 
     private static void ValidateRockPosition(ref Rock rock)
@@ -211,15 +258,19 @@ class TestGame
         for (int i = 0; i < MapWidth; ++i)
         {
             // horizontal walls
-            buffer.DrawToBuffer(i, 2, wallChar, ConsoleColor.DarkYellow);
-            buffer.DrawToBuffer(i, 14, wallChar, ConsoleColor.DarkYellow);
+            buffer.DrawToBuffer(i, 2, wallChar, ConsoleColor.DarkCyan);
+            buffer.DrawToBuffer(i, 14, wallChar, ConsoleColor.DarkCyan);
             if(i < 14 && i > 2)
             {
                 // vertical walls
-                buffer.DrawToBuffer(0, i, wallChar, ConsoleColor.DarkYellow);
-                buffer.DrawToBuffer(23, i, wallChar, ConsoleColor.DarkYellow);
+                buffer.DrawToBuffer(0, i, wallChar, ConsoleColor.DarkCyan);
+                buffer.DrawToBuffer(23, i, wallChar, ConsoleColor.DarkCyan);
             }
         }
+
+        // overwriting some walls for door  
+        buffer.DrawToBuffer(23, 6, '@', ConsoleColor.Black);
+        buffer.DrawToBuffer(23, 7, '@', ConsoleColor.Black);
     }
 
     public static void Main()
@@ -228,40 +279,50 @@ class TestGame
         Rock rock1 = new();
         PlaceForRock placeForRock = new();
         Portal portal = new();
+        Shop shop = new();
+        GameUI gameUI = new();
+
 
         BufferConsole buffer = new();
-        buffer.InitBuffer(MapWidth, MapHeight);
+        buffer.InitBuffer(60, 20);
 
         Console.CursorVisible = false;
 
         while (true)
         {
             buffer.ClearBuffer();
-            DrawWalls(buffer);
-            buffer.DrawToBuffer(placeForRock.positionX, placeForRock.positionY, 'X', ConsoleColor.Red);
-            if (portal.isEnterSpawned)
-                buffer.DrawToBuffer(portal.enterPositionX, portal.enterPositionY, 'P', ConsoleColor.Blue);
-            if (portal.isExitSpawned)
-                buffer.DrawToBuffer(portal.exitPositionX, portal.exitPositionY, 'P', ConsoleColor.Magenta);
-            buffer.DrawToBuffer(rock1.positionX, rock1.positionY, 'O', ConsoleColor.DarkGray);
-            buffer.DrawToBuffer(mainCharacter.positionX, mainCharacter.positionY, 'A');
+            if(inMainArea)
+            {
+                DrawWalls(buffer);
+                buffer.DrawToBuffer(placeForRock.positionX, placeForRock.positionY, 'X', ConsoleColor.Red);
+                if (portal.isEnterSpawned)
+                    buffer.DrawToBuffer(portal.enterPositionX, portal.enterPositionY, 'P', ConsoleColor.Blue);
+                if (portal.isExitSpawned)
+                    buffer.DrawToBuffer(portal.exitPositionX, portal.exitPositionY, 'P', ConsoleColor.Magenta);
+                buffer.DrawToBuffer(rock1.positionX, rock1.positionY, 'O', ConsoleColor.DarkGray);
+                buffer.DrawToBuffer(mainCharacter.positionX, mainCharacter.positionY, 'A');
 
-            // Вывод UI 
-            GameUI.DrawUI(buffer, score);
+                if (rock1.positionX == placeForRock.positionX && rock1.positionY == placeForRock.positionY)
+                {
+                    rock1 = new Rock();
+                    placeForRock = new PlaceForRock();
+                    score += 1;
+                    buffer.ClearBuffer();
+                }
 
+                gameUI.DrawUI(buffer, score, mainCharacter.positionX, mainCharacter.positionY, inShop);
+            }
+            if(inShop)
+            {
+                shop.DrawShop(buffer);
+                buffer.DrawToBuffer(mainCharacter.positionX, mainCharacter.positionY, 'A');
+                gameUI.DrawUI(buffer, score, mainCharacter.positionX, mainCharacter.positionY, inShop);
+            }
 
             // Рендер буфера на экран
             buffer.RenderBuffer();
 
-            if (rock1.positionX == placeForRock.positionX && rock1.positionY == placeForRock.positionY)
-            {
-                rock1 = new Rock();
-                placeForRock = new PlaceForRock();
-                score += 1;
-                buffer.ClearBuffer();
-            }
-
-            HandleControll(ref mainCharacter, ref rock1, ref portal);
+            HandleControll(ref mainCharacter, ref rock1, ref portal, ref gameUI, inShop);
             GetMeOutOfThisRockPls(ref rock1, ref mainCharacter);
 
             Thread.Sleep(5);

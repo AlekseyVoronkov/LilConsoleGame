@@ -2,7 +2,7 @@
 
 namespace Practice_i_guess
 {
-    class BufferConsole
+    internal class BufferConsole
     {
         private static char[,] buffer;
         private static ConsoleColor[,] colorBuffer; 
@@ -37,7 +37,7 @@ namespace Practice_i_guess
             if (x >= 0 && x < width && y >= 0 && y < height)
             {
                 buffer[x, y] = c;
-                colorBuffer[x, y] = color; // saving colour of char at the same coords
+                colorBuffer[x, y] = color; // saving color of char at the same coords
             }
         }
 
@@ -50,7 +50,22 @@ namespace Practice_i_guess
                 for (int x = 0; x < width; x++)
                 {
                     Console.ForegroundColor = colorBuffer[x, y];
-                    Console.Write(buffer[x, y]);
+                    if (buffer[x, y] == '@')
+                    {
+                        Console.BackgroundColor = ConsoleColor.DarkGreen;
+                        Console.Write(buffer[x, y]);
+                        Console.BackgroundColor = ConsoleColor.Black;
+                    }
+                    else if (buffer[x, y] == '.')
+                    {
+                        Console.BackgroundColor = ConsoleColor.Yellow;
+                        Console.Write(buffer[x, y]);
+                        Console.BackgroundColor = ConsoleColor.Black;
+                    }
+                    else
+                    {
+                        Console.Write(buffer[x, y]);
+                    }
                 }
                 Console.WriteLine();
             }
