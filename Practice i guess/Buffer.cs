@@ -1,6 +1,5 @@
 ﻿using Practice_i_guess;
 
-
 namespace Practice_i_guess
 {
     internal class BufferConsole
@@ -84,13 +83,6 @@ static class BufferExtensions
         for (int i = 0; i < text.Length; i++)
         {
             buffer.DrawToBuffer(x + i, y, text[i]);
-        }
-    }
-    public static void DrawText(this BufferConsole buffer, int x, int y, string text, ConsoleColor color)
-    {
-        for (int i = 0; i < text.Length; i++)
-        {
-            buffer.DrawToBuffer(x + i, y, text[i], color);
         }
     }
 
