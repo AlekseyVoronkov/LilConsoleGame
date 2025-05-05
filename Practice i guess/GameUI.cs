@@ -10,14 +10,16 @@
             ["help2"] = (0, 16),
             ["thats shop"] = (25, 5),
             ["help3"] = (0, 17),
-            ["s_portal"] = (25, 5)
+            ["s_portal"] = (25, 5),
+            ["s_dash"] = (25, 5)
+
         };
 
         private static string _tempMessage = "";
         private static DateTime _messageExpireTime;
         private static (int x, int y) _tempMessagePos = (0, 18);
 
-        public async void ShowTempMessage(string message, int durationMs = 3000)
+        public static async void ShowTempMessage(string message, int durationMs = 3000)
         {
             _tempMessage = message;
             _messageExpireTime = DateTime.Now.AddMilliseconds(durationMs);
@@ -35,6 +37,10 @@
             // Clear previous elements
             ClearUI(buffer);
 
+            // debug slop 
+            buffer.DrawText(28, 9, $"x{positionX}, y{positionY}");
+            buffer.DrawText(28, 10, $"p_isBought: {ShopPool.portalUpgrade.isBought}");
+            buffer.DrawText(28, 11, $"d_isBought: {ShopPool.dashUpgrade.isBought}");
             // draw score and controll hints
             buffer.DrawText(uiElements["score"].x, uiElements["score"].y, $"Score: {score}");
             buffer.DrawText(uiElements["help1"].x, uiElements["help1"].y, "Respawn rock: [R]");
@@ -50,9 +56,20 @@
             {
                 buffer.DrawText(uiElements["help3"].x, uiElements["help3"].y, "Buy an item [E]");
 
-                if(positionX == 3 && positionY == 4)
+                if (!ShopPool.portalUpgrade.isBought)
                 {
-                    buffer.DrawText(uiElements["s_portal"].x, uiElements["s_portal"].y, "Portal costs 5$");
+                    if (positionX == 3 && positionY == 4)
+                    {
+                        buffer.DrawText(uiElements["s_portal"].x, uiElements["s_portal"].y, $"Portal costs {GameEconomy.DashCost}$");
+                    }
+                }
+
+                if (!ShopPool.dashUpgrade.isBought)
+                {
+                    if (positionX == 6 && positionY == 4)
+                    {
+                        buffer.DrawText(uiElements["s_dash"].x, uiElements["s_dash"].y, $"Dash costs {GameEconomy.DashCost}$");
+                    }
                 }
             }
 
