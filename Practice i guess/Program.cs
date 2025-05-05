@@ -1,10 +1,10 @@
 ﻿using Practice_i_guess;
-using static TestGame;
 
 class TestGame
 {
     public static Random random = new();
-    public enum Ability { None, Portal, Dash }
+    public enum Ability { None, Portal, DoubleJump }
+    public static int score = 0;
     public static bool inShop = false;
     public static bool inMainArea = true;
     private const int MapWidth = 24;
@@ -23,8 +23,7 @@ class TestGame
         [['s', 'S', 'ы', 'Ы']] = (0, 1),
         [['r', 'R', 'к', 'К']] = (0, 0), // respawn rock
         [['p', 'P', 'з', 'З']] = (0, 0), // poral handling
-        [['e', 'E', 'у', 'У']] = (0, 0), // poral handling
-        [['f', 'F', 'а', 'А']] = (0, 0) // dash handling
+        [['e', 'E', 'у', 'У']] = (0, 0) // poral handling
     };
 
     struct Portal
@@ -43,13 +42,13 @@ class TestGame
 
         public void SpawnPortal(ref MainCharacter mainCharacter)
         {
-            if (isEnterSpawned == false)
+            if(isEnterSpawned == false)
             {
                 enterPositionX = mainCharacter.positionX;
                 enterPositionY = mainCharacter.positionY;
                 isEnterSpawned = true;
             }
-            else if (isExitSpawned == false)
+            else if(isExitSpawned == false)
             {
                 exitPositionX = mainCharacter.positionX;
                 exitPositionY = mainCharacter.positionY;
@@ -107,10 +106,9 @@ class TestGame
         }
     }
 
-    internal struct MainCharacter
+    struct MainCharacter
     {
         public int positionX = 1;
-        public int score = 10;
         public int positionY = 3;
         public List<Ability> Abilities { get; } = new();
 
@@ -130,55 +128,56 @@ class TestGame
             var ch = Console.ReadKey(true).KeyChar;
             var keysPressed = GetPressedKeys(ch).Item1;
             var movement = GetPressedKeys(ch).Item2;
-
+            
             // handling controlls
             MoveCharacter(movement.deltaX, movement.deltaY, ref mainCharacter, ref rock);
 
-            if (keysPressed.Contains('r'))
+            if (keysPressed.Contains('r')) 
             {
-                if (!inShop)
-                {
-                    mainCharacter.score -= 1;
-                    rock = new Rock();
-                }
+                score -= 1;
+                rock = new Rock();
             }
 
             if (keysPressed.Contains('p'))
             {
                 HandlePortal('p', ref mainCharacter, ref portal);
             }
-
-            if (keysPressed.Contains('f'))
-            {
-                HandleDash(ref movement.deltaX, ref movement.deltaY);
-            }
-
+            
             if (keysPressed.Contains('e') && inShop)
             {
-                Shop.TryToBuyItem(ref mainCharacter, gameUI);
+                if(score >= GameEconomy.PortalCost)
+                {
+                    score -= GameEconomy.PortalCost;
+                    mainCharacter.Abilities.Add(Ability.Portal);
+                    gameUI.ShowTempMessage("You bought a portal yupieee");
+                }
+                else
+                {
+                    gameUI.ShowTempMessage("poor bastard");
+                }
             }
         }
 
-        if (portal.isExitSpawned == true)
+        if(portal.isExitSpawned == true)
         {
             portal.TeleportObject(ref mainCharacter, ref rock);
         }
 
         ValidateRockPosition(ref rock);
     }
-
+    
     private static (char[], (int deltaX, int deltaY)) GetPressedKeys(char input)
     {
         char[] keys = controls.FirstOrDefault(kvp => kvp.Key.Contains(input)).Key ?? NoKeys;
         (int, int) values = controls.FirstOrDefault(kvp => kvp.Key.Contains(input)).Value;
-
+        
         return (keys, values);
     }
 
     private static void MoveCharacter(int deltaX, int deltaY, ref MainCharacter mainCharacter, ref Rock rock)
     {
 
-        if (IsCollision(mainCharacter, rock, deltaX, deltaY))
+        if(IsCollision(mainCharacter, rock, deltaX, deltaY))
         {
             rock.Move(deltaX, deltaY);
         }
@@ -191,7 +190,7 @@ class TestGame
 
     private static void HandleMovementBetweenAreas(int deltaX, int deltaY, ref MainCharacter mainCharacter, ref Rock rock)
     {
-        if (inMainArea)
+        if(inMainArea)
         {
             if (mainCharacter.positionX == 22 && (mainCharacter.positionY == 6 || mainCharacter.positionY == 7) && deltaX == 1)
             {
@@ -235,41 +234,23 @@ class TestGame
         }
     }
 
-    private static bool IsCollision(MainCharacter mainCharacter, Rock rock, int deltaX, int deltaY)
+    private static bool IsCollision(MainCharacter mainCharacter,  Rock rock, int deltaX, int deltaY)
     {
         return mainCharacter.positionX == rock.positionX + deltaX * -1 && mainCharacter.positionY == rock.positionY + deltaY * -1;
     }
 
     private static void HandlePortal(char ch, ref MainCharacter mainCharacter, ref Portal portal)
     {
-        if (mainCharacter.HasAbility(Ability.Portal) == true)
+        if(mainCharacter.HasAbility(Ability.Portal) == true)
         {
             portal.SpawnPortal(ref mainCharacter);
         }
-    }
-
-    private static void HandleDash(ref int deltaX, ref int deltaY)
-    {
-        deltaX *= 3;
-        deltaY *= 3;
     }
 
     private static void ValidateRockPosition(ref Rock rock)
     {
         rock.positionX = Math.Clamp(rock.positionX, 1, 22);
         rock.positionY = Math.Clamp(rock.positionY, 3, 13);
-    }
-
-    private static void HandleRockOnCross(ref Rock rock, ref PlaceForRock placeForRock, ref MainCharacter mainCharacter)
-    {
-
-        if (rock.positionX == placeForRock.positionX && rock.positionY == placeForRock.positionY)
-        {
-            rock = new Rock();
-            placeForRock = new PlaceForRock();
-            mainCharacter.score += 1;
-
-        }
     }
 
     private static void DrawWalls(BufferConsole buffer)
@@ -279,7 +260,7 @@ class TestGame
             // horizontal walls
             buffer.DrawToBuffer(i, 2, wallChar, ConsoleColor.DarkCyan);
             buffer.DrawToBuffer(i, 14, wallChar, ConsoleColor.DarkCyan);
-            if (i < 14 && i > 2)
+            if(i < 14 && i > 2)
             {
                 // vertical walls
                 buffer.DrawToBuffer(0, i, wallChar, ConsoleColor.DarkCyan);
@@ -291,6 +272,7 @@ class TestGame
         buffer.DrawToBuffer(23, 6, '@', ConsoleColor.Black);
         buffer.DrawToBuffer(23, 7, '@', ConsoleColor.Black);
     }
+
     public static void Main()
     {
         MainCharacter mainCharacter = new();
@@ -320,20 +302,21 @@ class TestGame
                 buffer.DrawToBuffer(rock1.positionX, rock1.positionY, 'O', ConsoleColor.DarkGray);
                 buffer.DrawToBuffer(mainCharacter.positionX, mainCharacter.positionY, 'A');
 
-                HandleRockOnCross(ref rock1, ref placeForRock, ref mainCharacter);
+                if (rock1.positionX == placeForRock.positionX && rock1.positionY == placeForRock.positionY)
+                {
+                    rock1 = new Rock();
+                    placeForRock = new PlaceForRock();
+                    score += 1;
+                    buffer.ClearBuffer();
+                }
 
-                gameUI.DrawUI(buffer, mainCharacter.score, mainCharacter.positionX, mainCharacter.positionY, inShop);
+                gameUI.DrawUI(buffer, score, mainCharacter.positionX, mainCharacter.positionY, inShop);
             }
             if(inShop)
             {
                 shop.DrawShop(buffer);
-                buffer.DrawToBuffer(rock1.positionX, rock1.positionY, 'O', ConsoleColor.DarkGray);
-                if (portal.isEnterSpawned)
-                    buffer.DrawToBuffer(portal.enterPositionX, portal.enterPositionY, 'P', ConsoleColor.Blue);
-                if (portal.isExitSpawned)
-                    buffer.DrawToBuffer(portal.exitPositionX, portal.exitPositionY, 'P', ConsoleColor.Magenta);
                 buffer.DrawToBuffer(mainCharacter.positionX, mainCharacter.positionY, 'A');
-                gameUI.DrawUI(buffer, mainCharacter.score, mainCharacter.positionX, mainCharacter.positionY, inShop);
+                gameUI.DrawUI(buffer, score, mainCharacter.positionX, mainCharacter.positionY, inShop);
             }
 
             // Рендер буфера на экран
