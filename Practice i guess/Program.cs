@@ -112,6 +112,7 @@ class TestGame
         public int positionX = 1;
         public int score = 10;
         public int positionY = 3;
+        public (int, int) movement = (0, 0); 
         public List<Ability> Abilities { get; } = new();
 
         public MainCharacter()
@@ -129,10 +130,13 @@ class TestGame
             // getting pressed key and getting corresponding keys and values in controls dictionary 
             var ch = Console.ReadKey(true).KeyChar;
             var keysPressed = GetPressedKeys(ch).Item1;
-            var movement = GetPressedKeys(ch).Item2;
+            int prevDeltaX = mainCharacter.movement.Item1;
+            int prevDeltaY = mainCharacter.movement.Item2;
+
+            mainCharacter.movement = GetPressedKeys(ch).Item2;
 
             // handling controlls
-            MoveCharacter(movement.deltaX, movement.deltaY, ref mainCharacter, ref rock);
+            MoveCharacter(mainCharacter.movement.Item1, mainCharacter.movement.Item2, ref mainCharacter, ref rock);
 
             if (keysPressed.Contains('r'))
             {
@@ -150,7 +154,10 @@ class TestGame
 
             if (keysPressed.Contains('f'))
             {
-                HandleDash(ref movement.deltaX, ref movement.deltaY);
+                mainCharacter.movement.Item1 = prevDeltaX;
+                mainCharacter.movement.Item2 = prevDeltaY;
+
+                HandleDash(prevDeltaX, prevDeltaY, ref mainCharacter, ref rock, gameUI);
             }
 
             if (keysPressed.Contains('e') && inShop)
@@ -248,11 +255,33 @@ class TestGame
         }
     }
 
-    private static void HandleDash(ref int deltaX, ref int deltaY)
+    private static void HandleDash(int deltaX, int deltaY, ref MainCharacter mainCharacter, ref Rock rock, GameUI gameUI)
     {
-        deltaX *= 3;
-        deltaY *= 3;
+        if (mainCharacter.HasAbility(Ability.Dash) == true)
+        {
+            // getting dash direction + range
+            deltaX = Math.Sign(deltaX) * 3; // -3, 0 or 3
+            deltaY = Math.Sign(deltaY) * 3;
+
+            (int startX, int startY) = (mainCharacter.positionX, mainCharacter.positionY);
+
+            MoveCharacter(deltaX, deltaY, ref mainCharacter, ref rock);
+
+            // drawing dash trail
+            if (deltaX != 0 || deltaY != 0)
+            {
+                for (int i = 1; i < 3; ++i)
+                {
+                    int trailX = startX + deltaX * i / 3;
+                    int trailY = startY + deltaY * i / 3;
+
+                    gameUI.ShowTempMessage("o", (Math.Clamp(trailX, 1, 22), Math.Clamp(trailY, 3, 13)), ConsoleColor.Cyan, durationMs: 250 * i);
+                    gameUI.ShowTempMessage("O", (Math.Clamp(trailX, 1, 22), Math.Clamp(trailY, 3, 13)), ConsoleColor.Cyan, durationMs: 150 * i);
+                }
+            }
+        }
     }
+
 
     private static void ValidateRockPosition(ref Rock rock)
     {

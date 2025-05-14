@@ -1,7 +1,31 @@
-﻿namespace Practice_i_guess
+﻿using System;
+
+namespace Practice_i_guess
 {
     internal class GameUI
     {
+        private readonly List<TempMessage> _tempMessages = new();
+
+        // Класс для хранения данных сообщения
+        private class TempMessage
+        {
+            public string Text { get; }
+            public (int x, int y) Position { get; }
+            public ConsoleColor Color { get; }
+            public DateTime ExpireTime { get; }
+
+            public TempMessage(string text, (int x, int y) pos,
+                             ConsoleColor color, int durationMs)
+            {
+                Text = text;
+                Position = pos;
+                Color = color;
+                ExpireTime = DateTime.Now.AddMilliseconds(durationMs);
+            }
+
+            public bool IsExpired => DateTime.Now >= ExpireTime;
+        }
+
         private static readonly Dictionary<string, (int x, int y)> uiElements = new()
         {
             // text cords
@@ -15,22 +39,32 @@
 
         };
 
-        private static string _tempMessage = "";
-        private static DateTime _messageExpireTime;
-        private static (int x, int y) _tempMessagePos = (0, 18);
-
-        public static async void ShowTempMessage(string message, int durationMs = 3000)
+        public void ShowTempMessage(string text,
+                              (int x, int y)? position = null,
+                              ConsoleColor? color = null,
+                              int durationMs = 3000)
         {
-            _tempMessage = message;
-            _messageExpireTime = DateTime.Now.AddMilliseconds(durationMs);
+            var pos = position ?? (0, 18); // Позиция по умолчанию
+            var col = color ?? ConsoleColor.Red; // Цвет по умолчанию
 
-            await Task.Delay(durationMs);
+            _tempMessages.Add(new TempMessage(text, pos, col, durationMs));
+        }
 
-            if (DateTime.Now >= _messageExpireTime)
+        // Обновление состояний сообщений (вызывать каждый кадр)
+        public void Update()
+        {
+            _tempMessages.RemoveAll(m => m.IsExpired);
+        }
+
+        // Отрисовка всех активных сообщений
+        private void DrawTempMessages(BufferConsole buffer)
+        {
+            foreach (var msg in _tempMessages)
             {
-                _tempMessage = "";
+                buffer.DrawText(msg.Position.x, msg.Position.y, msg.Text, msg.Color);
             }
         }
+
 
         public void DrawUI(BufferConsole buffer, int score, int positionX, int positionY, bool inSnop)
         {
@@ -47,10 +81,8 @@
             buffer.DrawText(uiElements["help2"].x, uiElements["help2"].y, "Portals: [P]");
             buffer.DrawText(0, 17, $"x{positionX}, y{positionY}");
 
-            if (!string.IsNullOrEmpty(_tempMessage))
-            {
-                buffer.DrawText(_tempMessagePos.x, _tempMessagePos.y, _tempMessage);
-            }
+            Update();
+            DrawTempMessages(buffer);
 
             if (inSnop)
             {

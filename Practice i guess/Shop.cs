@@ -20,24 +20,24 @@ namespace Practice_i_guess
             {
                 mainCharacter.score -= GameEconomy.PortalCost;
                 mainCharacter.Abilities.Add(Ability.Portal);
-                GameUI.ShowTempMessage("You bought a portal yupieee");
+                gameUI.ShowTempMessage("You bought a portal yupieee", (0, 18), ConsoleColor.Green, 3000);
                 ShopPool.portalUpgrade.isBought = true;
             }
             if (mainCharacter.positionX == 3 && mainCharacter.positionY == 4 && mainCharacter.score < GameEconomy.PortalCost)
             {
-                GameUI.ShowTempMessage($"poor bastard, you need {GameEconomy.PortalCost - mainCharacter.score} more");
+                gameUI.ShowTempMessage($"poor bastard, you need {GameEconomy.PortalCost - mainCharacter.score} more");
             }
 
             if ((mainCharacter.positionX == 6 && mainCharacter.positionY == 4) && mainCharacter.score >= GameEconomy.DashCost)
             {
                 mainCharacter.score -= GameEconomy.DashCost;
                 mainCharacter.Abilities.Add(Ability.Dash);
-                GameUI.ShowTempMessage("You bought a dash yupieee");
+                gameUI.ShowTempMessage("You bought a dash yupieee", (0, 18), ConsoleColor.Green, 3000);
                 ShopPool.dashUpgrade.isBought = true;
             }
             if (mainCharacter.positionX == 3 && mainCharacter.positionY == 4 && mainCharacter.score < GameEconomy.DashCost)
             {
-                GameUI.ShowTempMessage($"poor bastard, you need {GameEconomy.DashCost - mainCharacter.score} more");
+                gameUI.ShowTempMessage($"poor bastard, you need {GameEconomy.DashCost - mainCharacter.score} more");
             }
         }
 
