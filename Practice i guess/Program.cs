@@ -1,11 +1,13 @@
 ﻿using Practice_i_guess;
 using static TestGame;
+using System;
 
 class TestGame
 {
     public static Random random = new();
     public enum Ability { None, Portal, Dash }
     public static bool inShop = false;
+    public static bool inRaceRoom = false;
     public static bool inMainArea = true;
     private const int MapWidth = 24;
     private const int MapHeight = 17;
@@ -17,14 +19,14 @@ class TestGame
 
     private static readonly Dictionary<char[], (int deltaX, int deltaY)> controls = new()
     {
-        [['a', 'A', 'ф', 'Ф']] = (-1, 0),
-        [['d', 'D', 'в', 'В']] = (1, 0), // wasd handling
-        [['w', 'W', 'ц', 'Ц']] = (0, -1),
-        [['s', 'S', 'ы', 'Ы']] = (0, 1),
-        [['r', 'R', 'к', 'К']] = (0, 0), // respawn rock
-        [['p', 'P', 'з', 'З']] = (0, 0), // poral handling
-        [['e', 'E', 'у', 'У']] = (0, 0), // poral handling
-        [['f', 'F', 'а', 'А']] = (0, 0) // dash handling
+        [['a', 'A', 'ф', 'Ф']] = (-1, 0),   // 
+        [['d', 'D', 'в', 'В']] = (1, 0),    // wasd handling
+        [['w', 'W', 'ц', 'Ц']] = (0, -1),   // 
+        [['s', 'S', 'ы', 'Ы']] = (0, 1),    //
+        [['r', 'R', 'к', 'К']] = (0, 0),    // respawn rock
+        [['p', 'P', 'з', 'З']] = (0, 0),    // poral handling
+        [['e', 'E', 'у', 'У']] = (0, 0),    // item buying handling
+        [['f', 'F', 'а', 'А']] = (0, 0)     // dash handling
     };
 
     struct Portal
@@ -57,6 +59,7 @@ class TestGame
             }
             else
             {
+                // third call dispawn portals 
                 isEnterSpawned = false;
                 isExitSpawned = false;
             }
@@ -200,20 +203,44 @@ class TestGame
     {
         if (inMainArea)
         {
+            // from MainArea to Shop
             if (mainCharacter.positionX == 22 && (mainCharacter.positionY == 6 || mainCharacter.positionY == 7) && deltaX == 1)
             {
                 inShop = true;
                 inMainArea = false;
+                inRaceRoom = false;
                 mainCharacter.positionX = 0;
             }
         }
-        else
+        else if(inShop) 
         {
+            // from Shop to MainArea
             if (mainCharacter.positionX == 1 && (mainCharacter.positionY == 6 || mainCharacter.positionY == 7) && deltaX == -1)
             {
                 inShop = false;
                 inMainArea = true;
+                inRaceRoom = false;
                 mainCharacter.positionX = 23;
+            }
+
+            // from Shop to RaceRoom
+            if (mainCharacter.positionY == 13 && (mainCharacter.positionX == 11 || mainCharacter.positionX == 12) && deltaY == 1)
+            {
+                inShop = false;
+                inMainArea = false;
+                inRaceRoom = true;
+                mainCharacter.positionY = 2;
+            }
+        }
+        else if (inRaceRoom)
+        {
+            // from RaceRoom to Shop
+            if (mainCharacter.positionY == 3 && (mainCharacter.positionX == 11 || mainCharacter.positionX == 12) && deltaY == -1)
+            {
+                inShop = true;
+                inMainArea = false;
+                inRaceRoom = false;
+                mainCharacter.positionY = 13;
             }
         }
     }
@@ -275,6 +302,7 @@ class TestGame
                     int trailX = startX + deltaX * i / 3;
                     int trailY = startY + deltaY * i / 3;
 
+                    gameUI.ShowTempMessage(",", (Math.Clamp(trailX, 1, 22), Math.Clamp(trailY, 3, 13)), ConsoleColor.Cyan, durationMs: 350 * i);
                     gameUI.ShowTempMessage("o", (Math.Clamp(trailX, 1, 22), Math.Clamp(trailY, 3, 13)), ConsoleColor.Cyan, durationMs: 250 * i);
                     gameUI.ShowTempMessage("O", (Math.Clamp(trailX, 1, 22), Math.Clamp(trailY, 3, 13)), ConsoleColor.Cyan, durationMs: 150 * i);
                 }
@@ -308,7 +336,7 @@ class TestGame
             // horizontal walls
             buffer.DrawToBuffer(i, 2, wallChar, ConsoleColor.DarkCyan);
             buffer.DrawToBuffer(i, 14, wallChar, ConsoleColor.DarkCyan);
-            if (i < 14 && i > 2)
+            if (i <  MapHeight - 3 && i > 2)
             {
                 // vertical walls
                 buffer.DrawToBuffer(0, i, wallChar, ConsoleColor.DarkCyan);
@@ -320,14 +348,57 @@ class TestGame
         buffer.DrawToBuffer(23, 6, '@', ConsoleColor.Black);
         buffer.DrawToBuffer(23, 7, '@', ConsoleColor.Black);
     }
+
+    private static void DrawMainArea(BufferConsole buffer, ref PlaceForRock placeForRock, ref Rock rock1, ref MainCharacter mainCharacter, Portal portal, GameUI gameUI)
+    {
+        DrawWalls(buffer);
+        buffer.DrawToBuffer(placeForRock.positionX, placeForRock.positionY, 'X', ConsoleColor.Red);
+
+        if (portal.isEnterSpawned)
+            buffer.DrawToBuffer(portal.enterPositionX, portal.enterPositionY, 'P', ConsoleColor.Blue);
+        if (portal.isExitSpawned)
+            buffer.DrawToBuffer(portal.exitPositionX, portal.exitPositionY, 'P', ConsoleColor.Magenta);
+
+        buffer.DrawToBuffer(rock1.positionX, rock1.positionY, 'O', ConsoleColor.DarkGray);
+        buffer.DrawToBuffer(mainCharacter.positionX, mainCharacter.positionY, 'A');
+        HandleRockOnCross(ref rock1, ref placeForRock, ref mainCharacter);
+        gameUI.DrawUI(buffer, mainCharacter.score, mainCharacter.positionX, mainCharacter.positionY, inShop, inMainArea, inRaceRoom);
+    }
+    private static void DrawShopArea(Shop shop, BufferConsole buffer, Rock rock1, Portal portal, MainCharacter mainCharacter, GameUI gameUI)
+    {
+        shop.DrawShop(buffer);
+        buffer.DrawToBuffer(rock1.positionX, rock1.positionY, 'O', ConsoleColor.DarkGray);
+
+        if (portal.isEnterSpawned)
+            buffer.DrawToBuffer(portal.enterPositionX, portal.enterPositionY, 'P', ConsoleColor.Blue);
+        if (portal.isExitSpawned)
+            buffer.DrawToBuffer(portal.exitPositionX, portal.exitPositionY, 'P', ConsoleColor.Magenta);
+
+        buffer.DrawToBuffer(mainCharacter.positionX, mainCharacter.positionY, 'A');
+        gameUI.DrawUI(buffer, mainCharacter.score, mainCharacter.positionX, mainCharacter.positionY, inShop, inMainArea, inRaceRoom);
+    }
+    private static void DrawRaceArea(RaceRoom raceRoom, BufferConsole buffer, Portal portal, MainCharacter mainCharacter, GameUI gameUI)
+    {
+        raceRoom.DrawRaceRoom(buffer);
+
+        if (portal.isEnterSpawned)
+            buffer.DrawToBuffer(portal.enterPositionX, portal.enterPositionY, 'P', ConsoleColor.Blue);
+        if (portal.isExitSpawned)
+            buffer.DrawToBuffer(portal.exitPositionX, portal.exitPositionY, 'P', ConsoleColor.Magenta);
+
+        buffer.DrawToBuffer(mainCharacter.positionX, mainCharacter.positionY, 'A');
+        gameUI.DrawUI(buffer, mainCharacter.score, mainCharacter.positionX, mainCharacter.positionY, inShop, inMainArea, inRaceRoom);
+    }
     public static void Main()
     {
         MainCharacter mainCharacter = new();
         Rock rock1 = new();
         PlaceForRock placeForRock = new();
         Portal portal = new();
+
         Shop shop = new();
         GameUI gameUI = new();
+        RaceRoom raceRoom = new();
 
 
         BufferConsole buffer = new();
@@ -340,31 +411,17 @@ class TestGame
             buffer.ClearBuffer();
             if(inMainArea)
             {
-                DrawWalls(buffer);
-                buffer.DrawToBuffer(placeForRock.positionX, placeForRock.positionY, 'X', ConsoleColor.Red);
-                if (portal.isEnterSpawned)
-                    buffer.DrawToBuffer(portal.enterPositionX, portal.enterPositionY, 'P', ConsoleColor.Blue);
-                if (portal.isExitSpawned)
-                    buffer.DrawToBuffer(portal.exitPositionX, portal.exitPositionY, 'P', ConsoleColor.Magenta);
-                buffer.DrawToBuffer(rock1.positionX, rock1.positionY, 'O', ConsoleColor.DarkGray);
-                buffer.DrawToBuffer(mainCharacter.positionX, mainCharacter.positionY, 'A');
-
-                HandleRockOnCross(ref rock1, ref placeForRock, ref mainCharacter);
-
-                gameUI.DrawUI(buffer, mainCharacter.score, mainCharacter.positionX, mainCharacter.positionY, inShop);
+                DrawMainArea(buffer, ref placeForRock, ref rock1, ref mainCharacter, portal, gameUI);
             }
             if(inShop)
             {
-                shop.DrawShop(buffer);
-                buffer.DrawToBuffer(rock1.positionX, rock1.positionY, 'O', ConsoleColor.DarkGray);
-                if (portal.isEnterSpawned)
-                    buffer.DrawToBuffer(portal.enterPositionX, portal.enterPositionY, 'P', ConsoleColor.Blue);
-                if (portal.isExitSpawned)
-                    buffer.DrawToBuffer(portal.exitPositionX, portal.exitPositionY, 'P', ConsoleColor.Magenta);
-                buffer.DrawToBuffer(mainCharacter.positionX, mainCharacter.positionY, 'A');
-                gameUI.DrawUI(buffer, mainCharacter.score, mainCharacter.positionX, mainCharacter.positionY, inShop);
+                DrawShopArea(shop, buffer, rock1, portal, mainCharacter, gameUI);
             }
-
+            if(inRaceRoom)
+            {
+                DrawRaceArea(raceRoom, buffer, portal, mainCharacter, gameUI);
+            }
+            
             // Рендер буфера на экран
             buffer.RenderBuffer();
 

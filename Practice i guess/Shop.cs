@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static TestGame;
+﻿using static TestGame;
 
 namespace Practice_i_guess
 {
@@ -14,7 +8,7 @@ namespace Practice_i_guess
         int shopHeight = 18;
         char wallChar = '$';
 
-        internal static void TryToBuyItem(ref TestGame.MainCharacter mainCharacter, GameUI gameUI)
+        internal static void TryToBuyItem(ref MainCharacter mainCharacter, GameUI gameUI)
         {
             if (mainCharacter.positionX == 3 && mainCharacter.positionY == 4 && mainCharacter.score >= GameEconomy.PortalCost)
             {
@@ -23,9 +17,9 @@ namespace Practice_i_guess
                 gameUI.ShowTempMessage("You bought a portal yupieee", (0, 18), ConsoleColor.Green, 3000);
                 ShopPool.portalUpgrade.isBought = true;
             }
-            if (mainCharacter.positionX == 3 && mainCharacter.positionY == 4 && mainCharacter.score < GameEconomy.PortalCost)
+            else if (mainCharacter.positionX == 3 && mainCharacter.positionY == 4 && mainCharacter.score < GameEconomy.PortalCost)
             {
-                gameUI.ShowTempMessage($"poor bastard, you need {GameEconomy.PortalCost - mainCharacter.score} more");
+                gameUI.ShowTempMessage($"poor bastard, you need {GameEconomy.PortalCost - mainCharacter.score} more for {ShopPool.portalUpgrade.abilityName}");
             }
 
             if ((mainCharacter.positionX == 6 && mainCharacter.positionY == 4) && mainCharacter.score >= GameEconomy.DashCost)
@@ -35,9 +29,9 @@ namespace Practice_i_guess
                 gameUI.ShowTempMessage("You bought a dash yupieee", (0, 18), ConsoleColor.Green, 3000);
                 ShopPool.dashUpgrade.isBought = true;
             }
-            if (mainCharacter.positionX == 3 && mainCharacter.positionY == 4 && mainCharacter.score < GameEconomy.DashCost)
+            else if (mainCharacter.positionX == 6 && mainCharacter.positionY == 4 && mainCharacter.score < GameEconomy.DashCost)
             {
-                gameUI.ShowTempMessage($"poor bastard, you need {GameEconomy.DashCost - mainCharacter.score} more");
+                gameUI.ShowTempMessage($"poor bastard, you need {GameEconomy.DashCost - mainCharacter.score} more for {ShopPool.dashUpgrade.abilityName}");
             }
         }
 
@@ -49,13 +43,14 @@ namespace Practice_i_guess
                 buffer.DrawToBuffer(i, 2, wallChar, ConsoleColor.DarkYellow);
                 buffer.DrawToBuffer(i, 14, wallChar, ConsoleColor.DarkYellow);
 
-                if (i < 16 && i > 2)
+                if (i < shopHeight - 2 && i > 1)
                 {
                     // vertical walls
                     buffer.DrawToBuffer(0, i, wallChar, ConsoleColor.DarkYellow);
                     buffer.DrawToBuffer(23, i, wallChar, ConsoleColor.DarkYellow);
                 }
             }
+
             if (!ShopPool.portalUpgrade.isBought)
             {
                 buffer.DrawToBuffer(3, 3, 'P', ConsoleColor.Magenta);
@@ -67,9 +62,13 @@ namespace Practice_i_guess
                 buffer.DrawToBuffer(6, 3, 'D', ConsoleColor.Gray);
                 buffer.DrawToBuffer(6, 4, '.', ConsoleColor.Yellow);
             }
-            // overwriting some walls for door  
+            // overwriting some walls for door to main area
             buffer.DrawToBuffer(0, 6, '@', ConsoleColor.Black);
             buffer.DrawToBuffer(0, 7, '@', ConsoleColor.Black);
+
+            // overwriting some walls for door to race
+            buffer.DrawToBuffer(11, 14, '@', ConsoleColor.Black);
+            buffer.DrawToBuffer(12, 14, '@', ConsoleColor.Black);
         }
     }
 }
