@@ -1,4 +1,6 @@
-﻿namespace Practice_i_guess
+﻿using System.Buffers;
+
+namespace Practice_i_guess
 {
     internal class GameUI
     {

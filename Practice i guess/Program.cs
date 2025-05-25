@@ -379,7 +379,7 @@ class TestGame
     }
     private static void DrawRaceArea(RaceRoom raceRoom, BufferConsole buffer, Portal portal, MainCharacter mainCharacter, GameUI gameUI)
     {
-        raceRoom.DrawRaceRoom(buffer);
+        raceRoom.DrawRaceRoom(buffer, ref mainCharacter);
 
         if (portal.isEnterSpawned)
             buffer.DrawToBuffer(portal.enterPositionX, portal.enterPositionY, 'P', ConsoleColor.Blue);

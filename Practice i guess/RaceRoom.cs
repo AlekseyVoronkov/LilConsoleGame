@@ -1,37 +1,101 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using static TestGame;
 
 namespace Practice_i_guess
 {
     internal class RaceRoom
     {
-        int raceWidth = 24;
-        int raceHeight = 18;
-        char wallChar = '#';
+        private readonly int raceWidth = 24;
+        private readonly int raceHeight = 18;
+        private readonly char wallChar = '#';
+        private string currentRoom; // Текущая комната (сохраняется между кадрами)
+        private static readonly Random random = new(); // Один экземпляр Random
+        static string[] roomPatterns = [   
+                                    "##########@@############" +
+                                    "#room1                 #" +
+                                    "#   ####################" +
+                                    "#                      #" +
+                                    "#   ####################" +
+                                    "#     #    #   #       #" +
+                                    "##### #   #  # #=======#" +
+                                    "#   # #  #  #  #       #" +
+                                    "# #   # #  #   #       #" +
+                                    "# ######  #    #       #" +
+                                    "# #   #  #     #       #" +
+                                    "#   #   #              #" +
+                                    "########################",
 
-        internal void DrawRaceRoom(BufferConsole buffer)
+                                    "##########@@############" +
+                                    "#room2                 #" +
+                                    "#                      #" +
+                                    "#                      #" +
+                                    "#                      #" +
+                                    "#                      #" +
+                                    "#                      #" +
+                                    "#                      #" +
+                                    "#                      #" +
+                                    "#                      #" +
+                                    "#======================#" +
+                                    "#                      #" +
+                                    "########################"];
+
+        public RaceRoom()
         {
-            for (int i = 0; i < raceWidth - 1; ++i)
-            {
-                // horizontal walls
-                buffer.DrawToBuffer(i, 2, wallChar, i % 2 == 0 ? ConsoleColor.DarkGray: ConsoleColor.White);
-                buffer.DrawToBuffer(i, 14, wallChar, i % 2 == 0 ? ConsoleColor.DarkGray : ConsoleColor.White);
+            currentRoom = ChooseRandomRoom();
+        }
+        internal void DrawRaceRoom(BufferConsole buffer, ref MainCharacter mainCharacter)
+        {
+            int mainCharacterPosition = (mainCharacter.positionY - 2) * raceWidth + mainCharacter.positionX;
 
-                if (i < raceHeight - 2 && i > 1)
+            int x = 0;
+            int y = 2;
+            foreach ( var tile in currentRoom)
+            {
+                // draw walls and finish line
+                // scary code for alternating wall color between gray and white. it must be possible to optimize this thing a lot.
+
+                if (tile == '#' && (x % 2 == 0 && y % 2 == 0 || (x % 2 != 0 && y % 2 != 0)))
                 {
-                    // vertical walls
-                    buffer.DrawToBuffer(0, i, wallChar, i % 2 == 0 ? ConsoleColor.DarkGray : ConsoleColor.White);
-                    buffer.DrawToBuffer(23, i, wallChar, i % 2 == 0 ? ConsoleColor.DarkGray : ConsoleColor.White);
+                    buffer.DrawToBuffer(x, y, tile, ConsoleColor.DarkGray);
+                }
+                else if (tile == '=')
+                {
+                    buffer.DrawToBuffer(x, y, tile, ConsoleColor.Green);
+                } 
+                else
+                {
+                    buffer.DrawToBuffer(x, y, tile);
+                }
+                // again, probably suboptimal way to get x and y, but it works.
+                if(x < raceWidth - 1)
+                {
+                    ++x;
+                } else
+                {
+                    x = 0;
+                    ++y;
                 }
             }
+            // character movement handling, time to suffer.
+            // detect if mc reached finish line -> give him points -> move him to start pos -> roll new room
+            // kinda broken rn :(
+            if (currentRoom[mainCharacterPosition] == '=')
+            {
+                mainCharacter.score += 1;
+                mainCharacter.positionX = 11;
+                mainCharacter.positionY = 2;
+                currentRoom = ChooseRandomRoom();
+            }
+        }
 
-            // overwriting some walls for door  
-            buffer.DrawToBuffer(11, 2, '@', ConsoleColor.Black);
-            buffer.DrawToBuffer(12, 2, '@', ConsoleColor.Black);
+        private string ChooseRandomRoom()
+        {
+            return roomPatterns[random.Next(roomPatterns.Length)];
         }
     }
-
 }
